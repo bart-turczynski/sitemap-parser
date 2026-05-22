@@ -50,6 +50,9 @@ def main() -> int:
     ap.add_argument("-s", "--structure", action="store_true")
     args = ap.parse_args()
 
+    if "://" not in args.url:
+        args.url = "https://" + args.url
+
     out_dir = Path(args.output).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     domain = domain_of(args.url)
