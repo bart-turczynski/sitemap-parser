@@ -1,0 +1,2 @@
+# Pinned so an upstream release cannot break an install we do not control.
+ultimate-sitemap-parser==1.8.0

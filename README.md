@@ -19,7 +19,9 @@ git clone https://github.com/bart-turczynski/sitemap-parser.git "$HOME/Projects/
 "$HOME/Projects/sitemap-parser/install.sh"
 ```
 
-`install.sh` creates a project-local Python venv, installs the parser library, symlinks the skill into `~/.claude/skills/`, and runs a probe against tidio.com to verify the install. After it finishes, restart Claude Code so it picks up the new skill.
+`install.sh` creates a project-local Python venv, installs the pinned dependencies from `requirements.txt`, symlinks the skill into `~/.claude/skills/`, and probes a live site to verify the install. After it finishes, restart Claude Code so it picks up the new skill.
+
+The probe defaults to tidio.com. Set `PROBE_URL` to use a different site. If the probe host is unreachable the installer warns and still succeeds — only a reachable host that returns no URLs is treated as a failure.
 
 ## Install (manual)
 
@@ -32,11 +34,11 @@ If you prefer step-by-step. `$REPO_DIR` stands for wherever you put the repo on 
    git clone https://github.com/bart-turczynski/sitemap-parser.git "$REPO_DIR"
    ```
 
-2. **Install the parser library** into a venv inside the repo:
+2. **Install the dependencies** into a venv inside the repo:
 
    ```bash
    python3 -m venv "$REPO_DIR/.venv"
-   "$REPO_DIR/.venv/bin/pip" install ultimate-sitemap-parser
+   "$REPO_DIR/.venv/bin/pip" install -r "$REPO_DIR/requirements.txt"
    ```
 
 3. **Symlink the skill** into Claude's user-level skills folder:
@@ -91,5 +93,6 @@ CSV columns: `url, last_modified, priority, change_frequency, images, alternates
 - `sitemap_parser.py` — deterministic Python CLI. Prints exactly one line: the path to the generated file.
 - `run.sh` — picks `.venv/bin/python3` if present, otherwise system `python3`.
 - `install.sh` — sets up the venv and the symlink.
+- `requirements.txt` — the pinned runtime dependency.
 
 No LLM is involved at runtime — the skill is just a translation layer. The Python script does all the work.
