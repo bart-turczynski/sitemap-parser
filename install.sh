@@ -14,24 +14,82 @@ echo "==> sitemap-parser installer"
 echo "    repo:      $REPO_DIR"
 echo "    skill dir: $SKILL_LINK"
 
-# 1. Verify python3
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: python3 not found in PATH" >&2
+# 1. Find a Python new enough for the dependencies.
+#    ultimate-sitemap-parser requires >= 3.10. macOS still ships 3.9 at
+#    /usr/bin/python3, so the first python3 on PATH is not always good enough.
+#    Fail with the reason rather than letting pip reject the wheel later.
+PY_MIN_MAJOR=3
+PY_MIN_MINOR=10
+PY_MIN="$PY_MIN_MAJOR.$PY_MIN_MINOR"
+
+# Succeeds when the interpreter in $1 is at least $PY_MIN.
+python_ok() {
+    "$1" -c "import sys; sys.exit(0 if sys.version_info[:2] >= ($PY_MIN_MAJOR, $PY_MIN_MINOR) else 1)" \
+        >/dev/null 2>&1
+}
+
+# Print the path of a usable interpreter, or return 1. Prefers a plain python3
+# when it qualifies, else the highest versioned python3.x found on PATH. The
+# list is discovered, not hard-coded, so a newer Python works without an edit.
+find_python() {
+    if command -v python3 >/dev/null 2>&1 && python_ok python3; then
+        command -v python3
+        return 0
+    fi
+    local found
+    found="$(
+        IFS=:
+        for dir in $PATH; do
+            [ -d "$dir" ] || continue
+            for exe in "$dir"/python3.[0-9] "$dir"/python3.[0-9][0-9]; do
+                [ -x "$exe" ] || continue
+                # Sort key first so 3.10 ranks above 3.9 numerically.
+                printf '%s %s\n' "${exe##*/python3.}" "$exe"
+            done
+        # IFS is still ':' for the PATH split above, so give read its own.
+        done | sort -k1,1nr -u | while IFS=' ' read -r _minor exe; do
+            if python_ok "$exe"; then
+                printf '%s\n' "$exe"
+                break
+            fi
+        done
+    )"
+    [ -n "$found" ] || return 1
+    printf '%s\n' "$found"
+}
+
+if ! PYTHON="$(find_python)"; then
+    echo "Error: no Python $PY_MIN or newer found in PATH." >&2
+    if command -v python3 >/dev/null 2>&1; then
+        echo "       python3 is $(python3 --version 2>&1) at $(command -v python3)." >&2
+    else
+        echo "       No python3 found in PATH at all." >&2
+    fi
+    echo "       ultimate-sitemap-parser requires Python $PY_MIN or newer." >&2
+    echo "       Install one (macOS: 'brew install python3') and re-run." >&2
     exit 1
 fi
-echo "==> Found python3: $(command -v python3) ($(python3 --version))"
+echo "==> Using Python: $PYTHON ($("$PYTHON" --version))"
 
 # 2. Create venv and install the library
-if [ -d "$REPO_DIR/.venv" ]; then
-    echo "==> Reusing existing venv at $REPO_DIR/.venv"
+VENV_DIR="$REPO_DIR/.venv"
+VENV_PY="$VENV_DIR/bin/python3"
+if [ -x "$VENV_PY" ] && python_ok "$VENV_PY"; then
+    echo "==> Reusing existing venv at $VENV_DIR ($("$VENV_PY" --version))"
+elif [ -e "$VENV_DIR" ]; then
+    # Left over from a Python older than the floor, or half-built. It holds no
+    # source of ours and install.sh rebuilds it, so replacing it is safe.
+    echo "==> Existing venv at $VENV_DIR is unusable or older than $PY_MIN; recreating"
+    rm -rf "$VENV_DIR"
+    "$PYTHON" -m venv "$VENV_DIR"
 else
-    echo "==> Creating venv at $REPO_DIR/.venv"
-    python3 -m venv "$REPO_DIR/.venv"
+    echo "==> Creating venv at $VENV_DIR"
+    "$PYTHON" -m venv "$VENV_DIR"
 fi
 echo "==> Upgrading pip"
-"$REPO_DIR/.venv/bin/pip" install --quiet --upgrade pip
+"$VENV_DIR/bin/pip" install --quiet --upgrade pip
 echo "==> Installing dependencies from requirements.txt"
-"$REPO_DIR/.venv/bin/pip" install --quiet -r "$REPO_DIR/requirements.txt"
+"$VENV_DIR/bin/pip" install --quiet -r "$REPO_DIR/requirements.txt"
 
 # 3. Symlink into Claude's user-level skills folder
 mkdir -p "$HOME/.claude/skills"
@@ -54,7 +112,7 @@ echo "==> Probing $PROBE_URL (writing to /tmp)"
 if PROBE_PATH="$("$REPO_DIR/run.sh" "$PROBE_URL" --output /tmp)" \
    && [ -f "$PROBE_PATH" ] && [ "$(wc -l < "$PROBE_PATH")" -gt 1 ]; then
     echo "==> Probe succeeded: $PROBE_PATH"
-elif ! "$REPO_DIR/.venv/bin/python3" - "$PROBE_URL" <<'PYEOF'
+elif ! "$VENV_PY" - "$PROBE_URL" <<'PYEOF'
 import sys, urllib.request
 try:
     urllib.request.urlopen(sys.argv[1], timeout=10).read(1)
