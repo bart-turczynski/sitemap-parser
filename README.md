@@ -14,7 +14,7 @@ Filters combine: include + exclude + recent-N-days, plus an optional output dire
 
 ## Requirements
 
-**Python 3.10 or newer**, because `ultimate-sitemap-parser` declares `Requires-Python >=3.10`.
+**Python 3.10 or newer**, because `ultimate-sitemap-parser` declares `Requires-Python >=3.10`. This repo declares the same floor as `requires-python` in `pyproject.toml`, and `install.sh` reads it from there — raising the floor is a one-line edit in one file. That `pyproject.toml` carries no build backend and is not installable; it exists so the version is declared where tooling looks for it, and the runtime dependency stays in `requirements.txt`.
 
 This matters on macOS: `/usr/bin/python3` is Apple's 3.9, which is below the floor. `install.sh` searches `PATH` for a qualifying interpreter — plain `python3` first, then the highest `python3.x` it can find — and stops with the reason if there is none. Nothing is version-pinned beyond that floor, so a newer Python needs no change here.
 
@@ -105,5 +105,6 @@ CSV columns: `url, last_modified, priority, change_frequency, images, alternates
 - `run.sh` — picks `.venv/bin/python3` if present, otherwise system `python3`.
 - `install.sh` — picks a Python 3.10+ interpreter, sets up the venv and the symlink.
 - `requirements.txt` — the pinned runtime dependency.
+- `pyproject.toml` — declares the Python floor; metadata only, not installable.
 
 No LLM is involved at runtime — the skill is just a translation layer. The Python script does all the work.

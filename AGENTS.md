@@ -2,8 +2,10 @@
 
 A Claude Code skill wrapping `ultimate-sitemap-parser` to extract a website's sitemap to CSV/TXT.
 
-Python 3.10+, the floor `ultimate-sitemap-parser` declares; macOS `/usr/bin/python3` is 3.9 and
-does not qualify. `install.sh` selects a qualifying interpreter from `PATH`.
+Python 3.10+, declared once as `requires-python` in `pyproject.toml` and parsed from there by
+`install.sh`, which selects a qualifying interpreter from `PATH`. macOS `/usr/bin/python3` is 3.9
+and does not qualify. `pyproject.toml` is metadata only: no build backend, and
+dependencies stay in `requirements.txt`.
 
 `install.sh` creates `.venv/` from the pinned `requirements.txt` and symlinks the repo into
 `~/.claude/skills/sitemap-parser`. Invoke the CLI through `./run.sh`, not

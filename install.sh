@@ -15,12 +15,20 @@ echo "    repo:      $REPO_DIR"
 echo "    skill dir: $SKILL_LINK"
 
 # 1. Find a Python new enough for the dependencies.
-#    ultimate-sitemap-parser requires >= 3.10. macOS still ships 3.9 at
-#    /usr/bin/python3, so the first python3 on PATH is not always good enough.
-#    Fail with the reason rather than letting pip reject the wheel later.
-PY_MIN_MAJOR=3
-PY_MIN_MINOR=10
-PY_MIN="$PY_MIN_MAJOR.$PY_MIN_MINOR"
+#    The floor matches what ultimate-sitemap-parser requires. macOS still ships
+#    3.9 at /usr/bin/python3, so the first python3 on PATH is not always good
+#    enough. Fail with the reason rather than letting pip reject the wheel later.
+#    Read the floor from pyproject.toml so it is declared in one place. Parsed
+#    with sed, not Python: at this point we have no interpreter we trust.
+PYPROJECT="$REPO_DIR/pyproject.toml"
+PY_MIN="$(sed -n 's/^[[:space:]]*requires-python[[:space:]]*=[[:space:]]*"[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\)".*/\1/p' "$PYPROJECT" | head -1)"
+if [ -z "$PY_MIN" ]; then
+    echo "Error: could not read requires-python from $PYPROJECT." >&2
+    echo "       Expected a line like: requires-python = \">=3.10\"" >&2
+    exit 1
+fi
+PY_MIN_MAJOR="${PY_MIN%%.*}"
+PY_MIN_MINOR="${PY_MIN#*.}"
 
 # Succeeds when the interpreter in $1 is at least $PY_MIN.
 python_ok() {
