@@ -23,7 +23,7 @@ Installing into a system or Homebrew Python instead of the venv does not work ei
 ## Install (quick)
 
 ```bash
-git clone https://github.com/bart-turczynski/sitemap-parser.git "$HOME/Projects/sitemap-parser"
+git clone https://gitlab.com/bart-turczynski/sitemap-parser.git "$HOME/Projects/sitemap-parser"
 "$HOME/Projects/sitemap-parser/install.sh"
 ```
 
@@ -41,7 +41,7 @@ If you prefer step-by-step. `$REPO_DIR` stands for wherever you put the repo on 
 
    ```bash
    REPO_DIR="$HOME/Projects/sitemap-parser"
-   git clone https://github.com/bart-turczynski/sitemap-parser.git "$REPO_DIR"
+   git clone https://gitlab.com/bart-turczynski/sitemap-parser.git "$REPO_DIR"
    ```
 
 2. **Install the dependencies** into a venv inside the repo. Substitute a specific
