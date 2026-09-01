@@ -12,6 +12,14 @@ A Claude Code skill that wraps [ultimate-sitemap-parser](https://pypi.org/projec
 
 Filters combine: include + exclude + recent-N-days, plus an optional output directory.
 
+## Requirements
+
+**Python 3.10 or newer**, because `ultimate-sitemap-parser` declares `Requires-Python >=3.10`.
+
+This matters on macOS: `/usr/bin/python3` is Apple's 3.9, which is below the floor. `install.sh` searches `PATH` for a qualifying interpreter — plain `python3` first, then the highest `python3.x` it can find — and stops with the reason if there is none. Nothing is version-pinned beyond that floor, so a newer Python needs no change here.
+
+Installing into a system or Homebrew Python instead of the venv does not work either: those interpreters are marked `EXTERNALLY-MANAGED` (PEP 668) and `pip` refuses to write to them. The venv is what makes the install possible, not ceremony.
+
 ## Install (quick)
 
 ```bash
@@ -20,6 +28,8 @@ git clone https://github.com/bart-turczynski/sitemap-parser.git "$HOME/Projects/
 ```
 
 `install.sh` creates a project-local Python venv, installs the pinned dependencies from `requirements.txt`, symlinks the skill into `~/.claude/skills/`, and probes a live site to verify the install. After it finishes, restart Claude Code so it picks up the new skill.
+
+Re-running it is safe. An existing `.venv/` is reused when its interpreter meets the floor, and rebuilt from scratch when it does not — so a venv created before this check can be repaired by running the installer again.
 
 The probe defaults to tidio.com. Set `PROBE_URL` to use a different site. If the probe host is unreachable the installer warns and still succeeds — only a reachable host that returns no URLs is treated as a failure.
 
@@ -34,7 +44,8 @@ If you prefer step-by-step. `$REPO_DIR` stands for wherever you put the repo on 
    git clone https://github.com/bart-turczynski/sitemap-parser.git "$REPO_DIR"
    ```
 
-2. **Install the dependencies** into a venv inside the repo:
+2. **Install the dependencies** into a venv inside the repo. Substitute a specific
+   interpreter for `python3` if yours is older than 3.10 (`python3.13 -m venv ...`):
 
    ```bash
    python3 -m venv "$REPO_DIR/.venv"
@@ -92,7 +103,7 @@ CSV columns: `url, last_modified, priority, change_frequency, images, alternates
 - `SKILL.md` — the natural-language → flag mapping Claude reads.
 - `sitemap_parser.py` — deterministic Python CLI. Prints exactly one line: the path to the generated file.
 - `run.sh` — picks `.venv/bin/python3` if present, otherwise system `python3`.
-- `install.sh` — sets up the venv and the symlink.
+- `install.sh` — picks a Python 3.10+ interpreter, sets up the venv and the symlink.
 - `requirements.txt` — the pinned runtime dependency.
 
 No LLM is involved at runtime — the skill is just a translation layer. The Python script does all the work.
