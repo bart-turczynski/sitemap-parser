@@ -33,6 +33,26 @@ Re-running it is safe. An existing `.venv/` is reused when its interpreter meets
 
 The probe defaults to tidio.com. Set `PROBE_URL` to use a different site. If the probe host is unreachable the installer warns and still succeeds — only a reachable host that returns no URLs is treated as a failure.
 
+### Upgrading an install made before `skill/`
+
+Earlier versions symlinked the **whole repository** into
+`~/.claude/skills/sitemap-parser`, which worked only because `SKILL.md` sat at
+the repository root. It no longer does, so `git pull` alone leaves that install
+pointing at a directory with no `SKILL.md` and no `run.sh` in it. The skill
+stops appearing and nothing says why — a skill that is not there produces no
+error — and an agent that still remembers the old
+`~/.claude/skills/sitemap-parser/run.sh` gets "no such file".
+
+Re-run `install.sh` after pulling. It replaces the old link in place, naming
+what it pointed at, and the venv is reused rather than rebuilt:
+
+```bash
+"$HOME/Projects/sitemap-parser/install.sh"
+```
+
+Then restart Claude Code. Nothing else needs cleaning up: the old install was
+one symlink, and replacing it is the whole migration.
+
 ## Install (manual)
 
 If you prefer step-by-step. `$REPO_DIR` stands for wherever you put the repo on your machine.

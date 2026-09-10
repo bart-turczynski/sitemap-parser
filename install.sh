@@ -106,7 +106,10 @@ echo "==> Installing dependencies from requirements.txt"
 # 3. Symlink into Claude's user-level skills folder
 mkdir -p "$HOME/.claude/skills"
 if [ -L "$SKILL_LINK" ]; then
-    echo "==> Replacing existing symlink at $SKILL_LINK"
+    # Naming the old target matters when it is the repository root: that is the
+    # pre-skill/ install, and after a pull it resolves to a directory with no
+    # SKILL.md, so the skill has silently stopped loading.
+    echo "==> Replacing existing symlink at $SKILL_LINK -> $(readlink "$SKILL_LINK")"
     rm "$SKILL_LINK"
 elif [ -e "$SKILL_LINK" ]; then
     echo "Error: $SKILL_LINK exists and is not a symlink. Move or delete it, then re-run." >&2
