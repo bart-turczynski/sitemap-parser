@@ -27,7 +27,7 @@ git clone https://gitlab.com/bart-turczynski/sitemap-parser.git "$HOME/Projects/
 "$HOME/Projects/sitemap-parser/install.sh"
 ```
 
-`install.sh` creates a project-local Python venv, installs the pinned dependencies from `requirements.txt`, symlinks the skill into `~/.claude/skills/`, and probes a live site to verify the install. After it finishes, restart Claude Code so it picks up the new skill.
+`install.sh` creates a project-local Python venv, installs the pinned dependencies from `requirements.txt`, symlinks `skill/` into `~/.claude/skills/`, and probes a live site to verify the install. After it finishes, restart Claude Code so it picks up the new skill.
 
 Re-running it is safe. An existing `.venv/` is reused when its interpreter meets the floor, and rebuilt from scratch when it does not — so a venv created before this check can be repaired by running the installer again.
 
@@ -52,16 +52,17 @@ If you prefer step-by-step. `$REPO_DIR` stands for wherever you put the repo on 
    "$REPO_DIR/.venv/bin/pip" install -r "$REPO_DIR/requirements.txt"
    ```
 
-3. **Symlink the skill** into Claude's user-level skills folder:
+3. **Symlink the skill directory** — `skill/`, not the repository root — into
+   Claude's user-level skills folder:
 
    ```bash
-   ln -s "$REPO_DIR" "$HOME/.claude/skills/sitemap-parser"
+   ln -s "$REPO_DIR/skill" "$HOME/.claude/skills/sitemap-parser"
    ```
 
 4. **Verify** (optional):
 
    ```bash
-   "$REPO_DIR/run.sh" https://tidio.com --output /tmp
+   "$REPO_DIR/skill/run.sh" https://tidio.com --output /tmp
    ```
 
    Should print a path like `/tmp/tidio.com_sitemap_2026-05-22.csv`.
@@ -100,9 +101,10 @@ CSV columns: `url, last_modified, priority, change_frequency, images, alternates
 
 ## How it works
 
-- `SKILL.md` — the natural-language → flag mapping Claude reads.
+- `skill/` — the whole of what Claude sees. `~/.claude/skills/sitemap-parser` links this directory, never the repository root: the runtime treats whatever it links as the skill package, and the root carries `.git`, `.venv`, this README and the installer, none of which belong in one.
+- `skill/SKILL.md` — the natural-language → flag mapping Claude reads.
+- `skill/run.sh` — resolves the repository from its own location, then picks `.venv/bin/python3` if present, otherwise system `python3`.
 - `sitemap_parser.py` — deterministic Python CLI. Prints exactly one line: the path to the generated file.
-- `run.sh` — picks `.venv/bin/python3` if present, otherwise system `python3`.
 - `install.sh` — picks a Python 3.10+ interpreter, sets up the venv and the symlink.
 - `requirements.txt` — the pinned runtime dependency.
 - `pyproject.toml` — declares the Python floor; metadata only, not installable.

@@ -2,17 +2,21 @@
 # Deterministic installer for the sitemap-parser Claude skill.
 # 1. Creates a Python venv inside the repo
 # 2. Installs the pinned dependencies from requirements.txt
-# 3. Symlinks this repo into ~/.claude/skills/sitemap-parser
+# 3. Symlinks the repo's skill/ directory into ~/.claude/skills/sitemap-parser
 # 4. Probes a live site to verify, distinguishing a broken install
 #    from an unreachable network
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+# Only skill/ is linked, never the repository root: the runtime treats whatever it
+# links as the skill package, and the root carries .git, .venv and this installer.
+SKILL_DIR="$REPO_DIR/skill"
 SKILL_LINK="$HOME/.claude/skills/sitemap-parser"
 
 echo "==> sitemap-parser installer"
-echo "    repo:      $REPO_DIR"
-echo "    skill dir: $SKILL_LINK"
+echo "    repo:       $REPO_DIR"
+echo "    skill dir:  $SKILL_DIR"
+echo "    skill link: $SKILL_LINK"
 
 # 1. Find a Python new enough for the dependencies.
 #    The floor matches what ultimate-sitemap-parser requires. macOS still ships
@@ -108,8 +112,8 @@ elif [ -e "$SKILL_LINK" ]; then
     echo "Error: $SKILL_LINK exists and is not a symlink. Move or delete it, then re-run." >&2
     exit 1
 fi
-ln -s "$REPO_DIR" "$SKILL_LINK"
-echo "==> Linked $SKILL_LINK -> $REPO_DIR"
+ln -s "$SKILL_DIR" "$SKILL_LINK"
+echo "==> Linked $SKILL_LINK -> $SKILL_DIR"
 
 # 4. Probe to verify. The probe needs the network, so a failure here is ambiguous
 #    between a broken install and an unreachable site. Tell those two apart before
@@ -117,7 +121,7 @@ echo "==> Linked $SKILL_LINK -> $REPO_DIR"
 PROBE_URL="${PROBE_URL:-https://tidio.com}"
 echo "==> Probing $PROBE_URL (writing to /tmp)"
 # A header-only CSV is non-empty, so require at least one data row.
-if PROBE_PATH="$("$REPO_DIR/run.sh" "$PROBE_URL" --output /tmp)" \
+if PROBE_PATH="$("$SKILL_DIR/run.sh" "$PROBE_URL" --output /tmp)" \
    && [ -f "$PROBE_PATH" ] && [ "$(wc -l < "$PROBE_PATH")" -gt 1 ]; then
     echo "==> Probe succeeded: $PROBE_PATH"
 elif ! "$VENV_PY" - "$PROBE_URL" <<'PYEOF'
